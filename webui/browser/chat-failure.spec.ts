@@ -48,12 +48,17 @@ for (const width of [1440, 390]) {
 test("an image and quote do not move the message menu away from the text", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/browser/fixture.html?case=chat-failure");
+  const image = page.getByAltText("Failure screenshot");
+  await expect(image).toBeVisible();
+  await expect(page.getByText("Earlier context / 之前的上下文")).toBeVisible();
   const bubble = page.locator("[data-user-text-bubble]");
   const trigger = page.locator("[data-message-block-menu-trigger]");
   await bubble.hover();
   await expect(trigger).toBeVisible();
   const bubbleBox = (await bubble.boundingBox())!;
   const triggerBox = (await trigger.boundingBox())!;
+  const imageBox = (await image.boundingBox())!;
+  expect(imageBox.y + imageBox.height).toBeLessThan(bubbleBox.y);
   expect(triggerBox.y).toBeGreaterThanOrEqual(bubbleBox.y);
   expect(triggerBox.y + triggerBox.height).toBeLessThanOrEqual(bubbleBox.y + bubbleBox.height);
   await trigger.click();
