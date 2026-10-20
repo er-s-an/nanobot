@@ -23,6 +23,7 @@ import { NewChatSkeletonFixture } from "./new-chat-skeleton-fixture";
 import "../src/globals.css";
 import { DiagramFixture } from "./diagram-fixture";
 import { HistoryBoundaryFixture } from "./history-boundary-fixture";
+import { ChatFailureFixture } from "./chat-failure-fixture";
 
 const history: UIMessage[] = [
   { id: "question", role: "user", content: "Earlier question", createdAt: 1_700_000_000_000 },
@@ -144,7 +145,9 @@ function AppsFixture() {
 if (parameters.get("case") === "skeleton-additions") installSkeletonPreviewApi();
 await initializeI18n();
 createRoot(document.getElementById("root")!).render(<TooltipProvider>
-  {parameters.get("case") === "history-boundary"
+  {parameters.get("case") === "chat-failure"
+    ? <ChatFailureFixture parameters={parameters} />
+    : parameters.get("case") === "history-boundary"
     ? <ClientProvider client={railClient} token="fixture" webuiCapabilities={["webui.prompt-navigation.v1"]}><HistoryBoundaryFixture local={parameters.has("local")} navigate={parameters.has("navigate")} /></ClientProvider>
     : parameters.get("case") === "diagrams"
     ? <DiagramFixture parameters={parameters} />

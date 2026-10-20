@@ -12,7 +12,7 @@ from nanobot.agent.loop import AgentLoop
 from nanobot.agent.turn_delivery import TurnDeliveryFactory
 from nanobot.bus.events import InboundMessage, OutboundMessage
 from nanobot.bus.queue import MessageBus
-from nanobot.providers.base import GenerationSettings, LLMResponse, ToolCallRequest
+from nanobot.providers.base import GenerationSettings, LLMProvider, LLMResponse, ToolCallRequest
 from nanobot.session.manager import SessionManager
 from nanobot.session.recovery import (
     RECOVERY_METADATA_KEY,
@@ -50,7 +50,10 @@ async def test_committed_model_failure_continues_with_tool_results_without_resen
     ])
 
     async def respond(**kwargs):
-        requests.append(deepcopy({"messages": kwargs["messages"], "tools": kwargs["tools"]}))
+        requests.append(deepcopy({
+            "messages": LLMProvider._sanitize_empty_content(kwargs["messages"]),
+            "tools": kwargs["tools"],
+        }))
         return next(responses)
 
     provider.chat_stream_with_retry = AsyncMock(side_effect=respond)
@@ -84,6 +87,7 @@ async def test_committed_model_failure_continues_with_tool_results_without_resen
         assert any(message.get("role") == "tool" and "saved evidence" in message["content"] for message in requests[-1]["messages"])
         assert requests[0]["messages"][0] == requests[-1]["messages"][0]
         assert requests[0]["tools"] == requests[-1]["tools"]
+        assert requests[-1]["messages"][:len(requests[1]["messages"])] == requests[1]["messages"]
         assert len(requests) == 3
     finally:
         await loop.aclose()

@@ -852,6 +852,12 @@ export function useNanobotStream(
 
       if (ev.event === "attached") {
         setRecoveryState(ev.recovery_state ?? null);
+        if (
+          ev.recovery_state?.reason === "model_request_failed"
+          || ev.recovery_state?.status === "resuming"
+        ) {
+          setStreamError(null);
+        }
         if (ev.recovery_state?.status === "resuming") {
           setRunStartedAt((current) => current ?? Date.now() / 1000);
           setIsStreaming(true);

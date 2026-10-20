@@ -1564,7 +1564,8 @@ class LLMProvider(ABC):
         if cls.is_arrearage_response(response):
             return "billing"
         kind = (response.error_kind or "").strip().lower()
-        if kind == "authentication" or response.error_status_code in {401, 403}:
+        # A plain 403 can be a policy or permission rejection, not bad credentials.
+        if kind in {"authentication", "oauth_auth_required"} or response.error_status_code == 401:
             return "authentication"
         if kind in {"connection", "timeout"}:
             return kind
@@ -1651,7 +1652,7 @@ class LLMProvider(ABC):
                 # Removing the user's images cannot repair account access.
                 # Do not rebuild native provider state for an unrelated failure.
                 if (
-                    (response.error_kind or "").lower() == "authentication"
+                    (response.error_kind or "").lower() in {"authentication", "oauth_auth_required"}
                     or response.error_status_code in {401, 403}
                     or self.is_arrearage_response(response)
                 ):

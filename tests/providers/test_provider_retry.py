@@ -44,6 +44,20 @@ class ScriptedProvider(LLMProvider):
         return "test-model"
 
 
+@pytest.mark.parametrize(("response", "expected"), [
+    (LLMResponse(content=None, finish_reason="error", error_kind="oauth_auth_required"), "authentication"),
+    (LLMResponse(content=None, finish_reason="error", error_status_code=401), "authentication"),
+    (LLMResponse(content=None, finish_reason="error", error_status_code=403), "unknown"),
+    (LLMResponse(
+        content=None, finish_reason="error", error_status_code=403, error_code="content_filter",
+    ), "unknown"),
+])
+def test_public_authentication_diagnosis_requires_credential_evidence(
+    response: LLMResponse, expected: str,
+) -> None:
+    assert LLMProvider.public_error_kind(response) == expected
+
+
 @pytest.mark.asyncio
 async def test_chat_with_retry_retries_transient_error_then_succeeds(monkeypatch) -> None:
     provider = ScriptedProvider([
@@ -409,6 +423,10 @@ async def test_chat_with_retry_explicit_override_beats_defaults() -> None:
 @pytest.mark.parametrize("error", [
     LLMResponse(content="unauthorized", finish_reason="error", error_status_code=401),
     LLMResponse(content="login expired", finish_reason="error", error_kind="authentication"),
+    LLMResponse(
+        content="Sign in again.", finish_reason="error",
+        error_kind="oauth_auth_required", error_should_retry=False,
+    ),
     LLMResponse(content="billing", finish_reason="error", error_status_code=402),
 ])
 async def test_account_failure_does_not_retry_without_images(error: LLMResponse) -> None:
